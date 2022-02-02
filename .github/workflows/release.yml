@@ -29,6 +29,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade platformio
+      - name: Version
+        run: echo "::set-output name=version::${{github.ref_name}}"
+        id: version
       - name: Run PlatformIO
         run: pio run -e esp12e
       - name: release
@@ -42,7 +45,7 @@ jobs:
           body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - name: upload binary
+      - name: Upload binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
