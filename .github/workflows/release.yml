@@ -30,7 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade platformio
       - name: Version
-        run: echo "::set-output name=version::${{github.ref_name}}"
+        run: echo "::set-output name=version::${{ github.sha }}"
         id: version
       - name: Run PlatformIO
         run: pio run -e esp12e
@@ -41,7 +41,7 @@ jobs:
           draft: false
           prerelease: false
           release_name: ${{ steps.version.outputs.version }}
-          tag_name: ver-${{ github.sha }}
+          tag_name: ver-${{ github.ref_name }}
           body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
