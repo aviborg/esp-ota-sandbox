@@ -31,3 +31,5 @@ jobs:
       run: | 
         pio run -e esp12e
         echo $CLOUD_VERSION
+      env:
+        CLOUD_VERSION: ${{ github.ref_name }}
