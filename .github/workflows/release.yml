@@ -37,11 +37,11 @@ jobs:
       - name: Run PlatformIO
         run: |
           echo $CLOUD_VERSION
+          echo ${{ steps.get_release.outputs.upload_url }}
           pio run -e esp12e
         env:
           CLOUD_VERSION: ${{ github.ref_name }}
       - name: Upload binary
-        id: upload_binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -50,5 +50,3 @@ jobs:
           asset_path: ./.pio/build/esp12e/firmware.bin
           asset_name: firmware-${{github.ref_name}}.bin
           asset_content_type: application/binary
-        run: |
-          echo ${{ steps.upload_binary.outputs.upload_url}}
