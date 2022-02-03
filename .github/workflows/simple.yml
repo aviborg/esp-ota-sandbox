@@ -28,5 +28,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install --upgrade platformio
     - name: Run PlatformIO
-      run: pio run -e esp12e
-      run: echo $CLOUD_VERSION
+      run: | 
+        pio run -e esp12e
+        echo $CLOUD_VERSION
