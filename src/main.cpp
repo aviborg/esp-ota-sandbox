@@ -3,7 +3,7 @@
 
 void setup() {
   Serial.begin(115200);
-  Serial.println(CLOUD_VERSION);
+  Serial.println();
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
@@ -14,5 +14,6 @@ void loop() {
   digitalWrite(LED_BUILTIN, LOW);
   delay(wait_time);
   wait_time = (wait_time + 100) % 1000;
+  Serial.println(CLOUD_VERSION);
   yield();
 }
