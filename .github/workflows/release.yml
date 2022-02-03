@@ -29,28 +29,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade platformio
-      - name: version
-        run: echo "::set-output name=version::${{github.ref_name}}"
-        id: version
-      - name: Run PlatformIO
-        run: pio run -e esp12e
-      - name: release
-        uses: actions/create-release@v1
-        id: create_release
-        with:
-          draft: false
-          prerelease: false
-          release_name: ${{ steps.version.outputs.version }}
-          tag_name: ${{ github.ref }}
-          body_path: CHANGELOG.md
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - name: upload binary
+      - name: Run PlatformIO
+        run: pio run -e esp12e
+      - name: Upload binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ./.pio/build/esp12e/firmware.bin
           asset_name: firmware-${{github.ref_name}}.bin
           asset_content_type: application/binary
