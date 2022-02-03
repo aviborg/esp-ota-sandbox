@@ -35,9 +35,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Run PlatformIO
+        run: |
+          echo $CLOUD_VERSION
+          pio run -e esp12e
         env:
-          CLOUD_VERSION: ${{github.ref_name}}
-        run: pio run -e esp12e
+          CLOUD_VERSION: ${{ github.ref_name }}
       - name: Upload binary
         uses: actions/upload-release-asset@v1
         env:
