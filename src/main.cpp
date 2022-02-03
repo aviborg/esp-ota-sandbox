@@ -1,8 +1,13 @@
 #include <Arduino.h>
+#include <cstdio>
 
 void setup() {
   Serial.begin(115200);
-  Serial.println(CLOUD_VERSION);
+  if(strlen(CLOUD_VERSION) > 1) {
+    Serial.println(CLOUD_VERSION);
+  } else {
+    Serial.println("No version");
+  }
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
