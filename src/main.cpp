@@ -3,11 +3,7 @@
 
 void setup() {
   Serial.begin(115200);
-  if(strlen(CLOUD_VERSION) > 1) {
-    Serial.println(CLOUD_VERSION);
-  } else {
-    Serial.println("No version");
-  }
+  Serial.println(CLOUD_VERSION);
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
