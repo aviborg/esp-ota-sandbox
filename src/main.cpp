@@ -9,6 +9,96 @@
 X509List cert(cert_DigiCert_High_Assurance_EV_Root_CA);
 WiFiClientSecure client;
 
+/* 
+ * Download binary image and use Update library to update the device.
+ */
+bool downloadUpdate(String url)
+{
+  HTTPClient http;
+  Serial.print("[HTTP] Download begin...\n");
+
+  http.begin(client, url);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+
+  Serial.print("[HTTP] GET...\n");
+  // start connection and send HTTP header
+  int httpCode = http.GET();
+  if (httpCode > 0)
+  {
+    // HTTP header has been send and Server response header has been handled
+    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+
+    // file found at server
+    if (httpCode == HTTP_CODE_OK)
+    {
+
+      int contentLength = http.getSize();
+      Serial.println("contentLength : " + String(contentLength));
+
+      if (contentLength > 0)
+      {
+        bool canBegin = Update.begin(contentLength);
+        if (canBegin)
+        {
+          // client = http.getStream();
+          Serial.println("Begin OTA. This may take 2 - 5 mins to complete. Things might be quite for a while.. Patience!");
+          size_t written = Update.writeStream(client);
+
+          if (written == contentLength)
+          {
+            Serial.println("Written : " + String(written) + " successfully");
+          }
+          else
+          {
+            Serial.println("Written only : " + String(written) + "/" + String(contentLength) + ". Retry?");
+          }
+
+          if (Update.end())
+          {
+            Serial.println("OTA done!");
+            if (Update.isFinished())
+            {
+              Serial.println("Update successfully completed. Rebooting.");
+              ESP.restart();
+              return true;
+            }
+            else
+            {
+              Serial.println("Update not finished? Something went wrong!");
+              return false;
+            }
+          }
+          else
+          {
+            Serial.println("Error Occurred. Error #: " + String(Update.getError()));
+            return false;
+          }
+        }
+        else
+        {
+          Serial.println("Not enough space to begin OTA");
+          client.flush();
+          return false;
+        }
+      }
+      else
+      {
+        Serial.println("There was no content in the response");
+        client.flush();
+        return false;
+      }
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else
+  {
+    return false;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println();
@@ -59,6 +149,18 @@ void loop() {
       String location = http.header("location");
       Serial.print("location: ");
       Serial.println(location);
+      int idx = location.lastIndexOf('/');
+      String tag = location.substring(idx + 1);
+      if(tag.compareTo(CLOUD_VERSION) != 0) {
+        Serial.print("New tag detected: ");
+        Serial.println(tag);
+        location = location.substring(0, idx - 1);
+        idx = location.lastIndexOf('/');
+        location = location.substring(0, idx);
+        location += "/download/" + tag + "/firmware-" + tag + ".bin";
+        Serial.println(location);
+        downloadUpdate(location);
+      }
     }
     http.end();
   }
