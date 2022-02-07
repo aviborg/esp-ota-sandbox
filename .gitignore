@@ -31,5 +31,7 @@
 *.out
 *.app
 
+# project specific
 .pio
 .vscode
+include/certs.h
