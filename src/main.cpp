@@ -128,8 +128,6 @@ void loop() {
   const unsigned long update_interval = 24 * 3600 * 1000;
   static uint8_t led_state = 0;
   static unsigned long previous_check = -update_interval;
-  Serial.println(previous_check);
-  Serial.println(millis() - previous_check);
   digitalWrite(LED_BUILTIN, led_state);
   led_state ^= 1;
   delay(500);
