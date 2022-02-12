@@ -102,8 +102,8 @@ bool downloadUpdate(String url)
 void setup() {
   Serial.begin(115200);
   Serial.println();
-  Serial.println(CLOUD_VERSION);
-  Serial.println(CLOUD_DOWNLOAD_URL);
+  Serial.printf("Current version: %s\n", CLOUD_VERSION);
+  Serial.printf("Download url: %s\n", CLOUD_DOWNLOAD_URL);
   wifi_connect();
 
     // Set time via NTP, as required for x.509 validation
@@ -125,14 +125,16 @@ void setup() {
 }
 
 void loop() {
+  const unsigned long update_interval = 24 * 3600 * 1000;
   static uint8_t led_state = 0;
-  static unsigned int previous_check = -60000;
-
+  static unsigned long previous_check = -update_interval;
+  Serial.println(previous_check);
+  Serial.println(millis() - previous_check);
   digitalWrite(LED_BUILTIN, led_state);
   led_state ^= 1;
   delay(500);
 
-  if(millis() - previous_check > 30000){
+  if(millis() - previous_check > update_interval){
     const char * header_keys[] = {"location"};
     const size_t number_headers = 1;
     Serial.println("Check for update");
@@ -167,6 +169,6 @@ void loop() {
       }
     }
   }
-  
+
   yield();
 }
