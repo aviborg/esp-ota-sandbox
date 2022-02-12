@@ -41,8 +41,8 @@ jobs:
           echo ${{ steps.get_release.outputs.upload_url }}
           pio run -e esp12e
         env:
-        CLOUD_VERSION: ${{ github.ref_name }}
-        CLOUD_DOWNLOAD_URL: ${{ github.server_url }}/${{ github.repository }}/releases/latest
+          CLOUD_VERSION: ${{ github.ref_name }}
+          CLOUD_DOWNLOAD_URL: ${{ github.server_url }}/${{ github.repository }}/releases/latest
       - name: Upload binary
         uses: actions/upload-release-asset@v1
         env:
