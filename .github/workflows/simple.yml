@@ -29,7 +29,9 @@ jobs:
         pip install --upgrade platformio
     - name: Run PlatformIO
       run: | 
-        pio run -e esp12e
         echo $CLOUD_VERSION
+        echo $CLOUD_DOWNLOAD_URL
+        pio run -e esp12e
       env:
-        CLOUD_VERSION: draft
+        CLOUD_VERSION: ${{ github.ref_name }}
+        CLOUD_DOWNLOAD_URL: ${{ github.server_url }}/${{ github.repository }}/releases/latest

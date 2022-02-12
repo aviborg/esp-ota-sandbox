@@ -44,7 +44,7 @@ bool downloadUpdate(String url)
           Serial.println("Begin OTA. This may take 2 - 5 mins to complete. Things might be quite for a while.. Patience!");
           size_t written = Update.writeStream(client);
 
-          if (written == contentLength)
+          if (written == static_cast<size_t>(contentLength))
           {
             Serial.println("Written : " + String(written) + " successfully");
           }
@@ -132,39 +132,41 @@ void loop() {
   led_state ^= 1;
   delay(500);
 
-  if(millis() - previous_check > 10000){
+  if(millis() - previous_check > 30000){
     const char * header_keys[] = {"location"};
     const size_t number_headers = 1;
     Serial.println("Check for update");
     previous_check = millis();
     HTTPClient http;
     String download_url(CLOUD_DOWNLOAD_URL);
-    Serial.println(download_url);
-    http.begin(client, download_url);
-    http.collectHeaders(header_keys, number_headers);
-    int http_code = http.sendRequest("HEAD", (const uint8_t*)nullptr, 0U);
-    
-    Serial.println(http_code);
-    if (http_code >=300 && http_code < 400) {
-      String location = http.header("location");
-      Serial.print("location: ");
-      Serial.println(location);
-      int idx = location.lastIndexOf('/');
-      String tag = location.substring(idx + 1);
+    int http_code = 300;
+    while (http_code >=300 && http_code < 400 && (millis()-previous_check) < 5000) {
+      Serial.println(download_url);
+      http.begin(client, download_url);
+      http.collectHeaders(header_keys, number_headers);
+      http_code = http.sendRequest("HEAD", (const uint8_t*)nullptr, 0U);
+      if(http_code >= 300) {
+        download_url = http.header("location");
+        Serial.println("Redirects to:");
+      }
+      http.end();
+    }
+    Serial.printf("HTTP code: %d\n", http_code);
+    if (http_code >=200 && http_code < 300) {
+      int idx = download_url.lastIndexOf('/');
+      String tag = download_url.substring(idx + 1);
       if(tag.compareTo(CLOUD_VERSION) != 0) {
         Serial.print("New tag detected: ");
         Serial.println(tag);
-        location = location.substring(0, idx - 1);
-        idx = location.lastIndexOf('/');
-        location = location.substring(0, idx);
-        location += "/download/" + tag + "/firmware-" + tag + ".bin";
-        Serial.println(location);
-        downloadUpdate(location);
+        download_url = download_url.substring(0, idx - 1);
+        idx = download_url.lastIndexOf('/');
+        download_url = download_url.substring(0, idx);
+        download_url += "/download/" + tag + "/firmware-" + tag + ".bin";
+        Serial.println(download_url);
+        downloadUpdate(download_url);
       }
     }
-    http.end();
   }
-
-
+  
   yield();
 }

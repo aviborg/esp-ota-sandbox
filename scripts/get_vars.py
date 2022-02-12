@@ -6,7 +6,6 @@ if version == None:
 
 url = os.environ.get("CLOUD_DOWNLOAD_URL")
 if url == None:
-    url = "https://github.com/aviborg/workflow-sandbox/releases/latest"
-    #url = "https://github.com/aviborg/workflow-sandbox/releases/tag/v0.0.14"
+    url = "https://github.com/aviborg/esp-ota-sandbox/releases/latest"
 
 print('-DCLOUD_VERSION=\\"{}\\" -DCLOUD_DOWNLOAD_URL=\\"{}\\"'.format(version, url))
