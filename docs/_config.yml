@@ -1,0 +1,15 @@
+title: ESP8266 OTA Sandbox
+description: Automatic Firmware Updates from GitHub Releases
+author: aviborg
+url: https://aviborg.github.io
+baseurl: /esp-ota-sandbox
+
+# GitHub Pages uses Jekyll by default
+# We're using plain HTML, so we need to tell Jekyll to process it correctly
+include:
+  - index.html
+  - style.css
+
+# Exclude files from processing
+exclude:
+  - README.md

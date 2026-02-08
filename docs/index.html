@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ESP8266 OTA Update from GitHub Releases - Automatic firmware updates for ESP8266 devices">
+    <title>ESP8266 OTA Sandbox - GitHub Release Automation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>🚀 ESP8266 OTA Sandbox</h1>
+                <p class="subtitle">Automatic Firmware Updates from GitHub Releases</p>
+            </div>
+            <nav>
+                <a href="#features">Features</a>
+                <a href="#quickstart">Quick Start</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#ci-cd">CI/CD</a>
+                <a href="#troubleshooting">Troubleshooting</a>
+                <a href="https://github.com/aviborg/esp-ota-sandbox" target="_blank" class="github-link">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <div class="hero-content">
+                <h2>Transform Your ESP8266 with Automatic Updates</h2>
+                <p>A complete ESP8266 firmware project that automatically checks for and installs updates from GitHub Releases. No physical connection required - everything happens over WiFi.</p>
+                <div class="hero-buttons">
+                    <a href="https://github.com/aviborg/esp-ota-sandbox" class="btn btn-primary">Get Started on GitHub</a>
+                    <a href="#quickstart" class="btn btn-secondary">Quick Start Guide</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <h2>✨ Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Automatic Updates</h3>
+                    <p>Device polls GitHub Releases every 24 hours and installs new firmware automatically</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure Communication</h3>
+                    <p>SSL/TLS with certificate validation, NTP time sync for secure connections</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Version Tracking</h3>
+                    <p>Compares current version with latest release tag to determine updates</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📡</div>
+                    <h3>WiFi Manager</h3>
+                    <p>Easy WiFi configuration via captive portal - no hardcoded credentials</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Redirect Handling</h3>
+                    <p>Properly follows GitHub's CDN redirects for reliable downloads</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Watchdog Management</h3>
+                    <p>Prevents timeouts during long downloads with smart watchdog handling</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="quickstart" class="quickstart">
+            <h2>🚀 Quick Start</h2>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Clone the Repository</h3>
+                    <pre><code>git clone https://github.com/aviborg/esp-ota-sandbox.git
+cd esp-ota-sandbox</code></pre>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Configure Version and Update URL</h3>
+                    <p>Set environment variables for your deployment:</p>
+                    <pre><code>export CLOUD_VERSION="v0.0.1"
+export CLOUD_DOWNLOAD_URL="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest"</code></pre>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Build and Upload Initial Firmware</h3>
+                    <pre><code>platformio run --target upload --target monitor</code></pre>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Configure WiFi</h3>
+                    <p>Connect to the <code>AutoConnectAP</code> access point created by your device and configure WiFi credentials through the captive portal.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Create a GitHub Release</h3>
+                    <ol>
+                        <li>Build firmware: <code>platformio run</code></li>
+                        <li>Find binary at <code>.pio/build/esp12e/firmware.bin</code></li>
+                        <li>Create a GitHub release with version tag (e.g., <code>v0.0.2</code>)</li>
+                        <li>Upload as <code>firmware-v0.0.2.bin</code> (matching the tag)</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">6</div>
+                <div class="step-content">
+                    <h3>Automatic Update</h3>
+                    <p>The device will check for updates every 24 hours and automatically install new versions! 🎉</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="how-it-works" class="how-it-works">
+            <h2>🔧 How It Works</h2>
+            
+            <div class="workflow">
+                <div class="workflow-step">
+                    <h3>📱 Initialization</h3>
+                    <ul>
+                        <li>Device connects to WiFi using WiFiManager</li>
+                        <li>Syncs time via NTP (required for SSL)</li>
+                        <li>Loads GitHub SSL certificates</li>
+                    </ul>
+                </div>
+
+                <div class="workflow-arrow">→</div>
+
+                <div class="workflow-step">
+                    <h3>🔍 Version Check</h3>
+                    <ul>
+                        <li>Queries GitHub Releases API every 24 hours</li>
+                        <li>Follows HTTP redirects to get latest release</li>
+                        <li>Compares with current version</li>
+                    </ul>
+                </div>
+
+                <div class="workflow-arrow">→</div>
+
+                <div class="workflow-step">
+                    <h3>⬇️ Download & Install</h3>
+                    <ul>
+                        <li>Constructs firmware download URL</li>
+                        <li>Downloads via secure connection</li>
+                        <li>Validates firmware format</li>
+                        <li>Writes to flash and reboots</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="technical-details">
+                <h3>Key Technical Details</h3>
+                
+                <div class="detail-card">
+                    <h4>Stream Handling</h4>
+                    <p>The critical fix for OTA success is using a stream reference:</p>
+                    <pre><code>Stream& stream = http.getStream();  // Reference, not copy
+size_t written = Update.writeStream(stream);</code></pre>
+                </div>
+
+                <div class="detail-card">
+                    <h4>Dual SSL Clients</h4>
+                    <ul>
+                        <li><strong>Secure client</strong> for GitHub API (with certificate validation)</li>
+                        <li><strong>Insecure client</strong> for CDN downloads (GitHub uses Azure CDN)</li>
+                    </ul>
+                </div>
+
+                <div class="detail-card">
+                    <h4>Update Parameters</h4>
+                    <p>U_FLASH flag is required for proper flash updates:</p>
+                    <pre><code>Update.begin(contentLength, U_FLASH);</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="ci-cd" class="ci-cd">
+            <h2>⚙️ CI/CD Workflows</h2>
+            <p>Automated GitHub Actions workflows handle building, testing, and releasing your firmware.</p>
+
+            <div class="workflow-grid">
+                <div class="workflow-card">
+                    <h3>🚀 Release Workflow</h3>
+                    <p><strong>Trigger:</strong> Create a release through GitHub</p>
+                    <ul>
+                        <li>Builds firmware with PlatformIO</li>
+                        <li>Generates SHA256 and MD5 checksums</li>
+                        <li>Uploads firmware binary with version name</li>
+                        <li>Reports firmware size and build info</li>
+                    </ul>
+                    <div class="workflow-usage">
+                        <strong>Usage:</strong>
+                        <ol>
+                            <li>Create a tag (e.g., <code>v1.0.0</code>)</li>
+                            <li>Publish release on GitHub</li>
+                            <li>Workflow automatically uploads assets</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="workflow-card">
+                    <h3>🔨 CI Workflow</h3>
+                    <p><strong>Trigger:</strong> Push to main/develop or pull requests</p>
+                    <ul>
+                        <li>Builds firmware for verification</li>
+                        <li>Runs PlatformIO static analysis</li>
+                        <li>Checks firmware size limits (max 1 MB)</li>
+                        <li>Uploads build artifacts</li>
+                        <li>Lints Python scripts</li>
+                    </ul>
+                </div>
+
+                <div class="workflow-card">
+                    <h3>🔒 Security Workflow</h3>
+                    <p><strong>Trigger:</strong> Weekly or manual</p>
+                    <ul>
+                        <li>Checks for outdated dependencies</li>
+                        <li>Runs security audit on Python packages</li>
+                        <li>Validates PlatformIO library versions</li>
+                        <li>Verifies SSL certificate validity</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="troubleshooting" class="troubleshooting">
+            <h2>🔍 Troubleshooting</h2>
+
+            <div class="trouble-grid">
+                <div class="trouble-card">
+                    <h3>❌ OTA Update Fails</h3>
+                    <div class="trouble-item">
+                        <strong>Error 10 (UPDATE_ERROR_NO_PARTITION)</strong>
+                        <p>Missing U_FLASH parameter in Update.begin()</p>
+                        <p class="solution">✅ Fix: <code>Update.begin(contentLength, U_FLASH);</code></p>
+                    </div>
+                    <div class="trouble-item">
+                        <strong>Error 13 (UPDATE_ERROR_MAGIC_BYTE)</strong>
+                        <p>Firmware file is not a valid ESP8266 binary</p>
+                        <p class="solution">✅ Verify you uploaded the correct .bin file from PlatformIO build</p>
+                    </div>
+                    <div class="trouble-item">
+                        <strong>Connection Closes Before Download</strong>
+                        <p>Using stream copy instead of reference</p>
+                        <p class="solution">✅ Fix: <code>Stream& stream = http.getStream();</code></p>
+                    </div>
+                </div>
+
+                <div class="trouble-card">
+                    <h3>📶 WiFi Connection Issues</h3>
+                    <ul>
+                        <li>Reset WiFi settings by holding reset button during boot</li>
+                        <li>Device will create <code>AutoConnectAP</code> access point</li>
+                        <li>Connect and reconfigure your WiFi credentials</li>
+                    </ul>
+                </div>
+
+                <div class="trouble-card">
+                    <h3>🔐 Certificate Errors</h3>
+                    <p>Certificates are auto-generated during build. To regenerate:</p>
+                    <pre><code>python scripts/cert.py -s api.github.com -n github > include/certs.h</code></pre>
+                </div>
+
+                <div class="trouble-card">
+                    <h3>⏰ Time Sync Fails</h3>
+                    <ul>
+                        <li>Ensure NTP servers are accessible: <code>pool.ntp.org</code>, <code>time.nist.gov</code></li>
+                        <li>Check firewall settings (NTP uses UDP port 123)</li>
+                    </ul>
+                </div>
+
+                <div class="trouble-card">
+                    <h3>🐛 Debug Output</h3>
+                    <p>Enable verbose HTTP debugging in <code>platformio.ini</code>:</p>
+                    <pre><code>-D DEBUG_ESP_HTTP_CLIENT
+-D DEBUG_ESP_PORT=Serial</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="requirements">
+            <h2>📋 Requirements</h2>
+            <div class="req-grid">
+                <div class="req-card">
+                    <h3>Hardware</h3>
+                    <ul>
+                        <li>ESP8266 board (ESP-12E, NodeMCU, Wemos D1 Mini, etc.)</li>
+                        <li>WiFi network connection</li>
+                        <li>USB cable for initial programming</li>
+                    </ul>
+                </div>
+                <div class="req-card">
+                    <h3>Software</h3>
+                    <ul>
+                        <li><a href="https://platformio.org/" target="_blank">PlatformIO</a> or Arduino IDE</li>
+                        <li>Python 3.x (for build scripts)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="serial-output">
+            <h2>📟 Serial Output Example</h2>
+            <p>Successful update looks like this:</p>
+            <pre><code>Check for update
+HTTP code: 200
+New tag detected: v0.0.21
+https://github.com/aviborg/esp-ota-sandbox/releases/download/v0.0.21/firmware-v0.0.21.bin
+[HTTP] Download begin...
+URL length: 89 chars
+[HTTP] GET...
+[HTTP] GET... code: 200
+contentLength : 444512
+Begin OTA. This may take 2 - 5 mins to complete. Things might be quite for a while.. Patience!
+Free sketch space: 2666496 bytes
+Written : 444512 successfully
+OTA done!
+Update successfully completed. Rebooting.</code></pre>
+        </section>
+
+        <section class="project-structure">
+            <h2>📁 Project Structure</h2>
+            <pre><code>esp-ota-sandbox/
+├── include/
+│   ├── certs.h           # Generated SSL certificates
+│   └── README
+├── lib/
+│   ├── update_firmware/  # OTA update logic
+│   │   ├── update_firmware.cpp
+│   │   └── update_firmware.h
+│   └── wifi_connect/     # WiFi management
+│       ├── wifi_connect.cpp
+│       └── wifi_connect.h
+├── scripts/
+│   ├── cert.py          # SSL certificate generator
+│   └── get_vars.py      # Build-time configuration
+├── src/
+│   └── main.cpp         # Main application
+├── extra_scripts.py     # PlatformIO build hooks
+└── platformio.ini       # PlatformIO configuration</code></pre>
+        </section>
+
+        <section class="contributing">
+            <h2>🤝 Contributing</h2>
+            <p>Contributions are welcome! Please feel free to submit a Pull Request.</p>
+            <p>For production use, consider adding:</p>
+            <ul>
+                <li>Firmware signature verification</li>
+                <li>Rollback mechanism</li>
+                <li>Update size validation before download</li>
+                <li>Configurable update check intervals</li>
+                <li>Battery level checks (for battery-powered devices)</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Created by <a href="https://github.com/aviborg" target="_blank">aviborg</a></p>
+            <p>This is a sandbox/example project demonstrating OTA updates from GitHub Releases</p>
+            <p><a href="https://github.com/aviborg/esp-ota-sandbox" target="_blank">View on GitHub</a> | <a href="https://github.com/aviborg/esp-ota-sandbox/blob/main/LICENSE" target="_blank">License</a></p>
+        </div>
+    </footer>
+</body>
+</html>
