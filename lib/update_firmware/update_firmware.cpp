@@ -10,7 +10,7 @@
 #include "update_firmware.h"
 #include "certs.h"
 
-X509List cert(cert_DigiCert_High_Assurance_EV_Root_CA);
+X509List cert(github_cert);
 WiFiClientSecure client;
 
 void sync_time(){
@@ -32,114 +32,132 @@ void sync_time(){
   client.setTrustAnchors(&cert);
 }
 
+String get_url_redirect(String url) {
+  HTTPClient http;
+  const char * header_keys[] = {"location"};
+  const size_t number_headers = 1;
+  int http_code = 300;
+  unsigned long check_timeout = millis();
+  while (http_code >=300 && http_code < 400 && (millis()-check_timeout) < 15000) {
+    http.begin(client, url);
+    http.collectHeaders(header_keys, number_headers);
+    http.addHeader("Accept", "*/*");
+    http_code = http.sendRequest("HEAD");
+    if(http_code >= 300) {
+      Serial.println("----");
+      Serial.println(url);
+      url = http.header("location");
+      Serial.print(http_code);
+      Serial.println(" Redirects to:");
+      Serial.println(url);
+      Serial.println("----");
+    }
+    http.end();
+  }
+  Serial.printf("HTTP code: %d\n", http_code);
+  return url;
+}
+
 void check_firmware()
 {
-    
-    const char * header_keys[] = {"location"};
-    const size_t number_headers = 1;
     Serial.println("Check for update");
-    
-    HTTPClient http;
     String download_url(CLOUD_DOWNLOAD_URL);
-    int http_code = 300;
-    unsigned long check_timeout = millis();
-    while (http_code >=300 && http_code < 400 && (millis()-check_timeout) < 15000) {
+    download_url = get_url_redirect(download_url);
+    
+    int idx = download_url.lastIndexOf('/');
+    String tag = download_url.substring(idx + 1);
+    if(tag.compareTo(CLOUD_VERSION) != 0) {
+      Serial.print("New tag detected: ");
+      Serial.println(tag);
+      download_url = download_url.substring(0, idx - 1);
+      idx = download_url.lastIndexOf('/');
+      download_url = download_url.substring(0, idx);
+      download_url += "/download/" + tag + "/firmware-" + tag + ".bin";
       Serial.println(download_url);
-      http.begin(client, download_url);
-      http.collectHeaders(header_keys, number_headers);
-      http_code = http.sendRequest("HEAD", (const uint8_t*)nullptr, 0U);
-      if(http_code >= 300) {
-        download_url = http.header("location");
-        Serial.println("Redirects to:");
-      }
-      http.end();
-    }
-    Serial.printf("HTTP code: %d\n", http_code);
-    if (http_code >=200 && http_code < 300) {
-      int idx = download_url.lastIndexOf('/');
-      String tag = download_url.substring(idx + 1);
-      if(tag.compareTo(CLOUD_VERSION) != 0) {
-        Serial.print("New tag detected: ");
-        Serial.println(tag);
-        download_url = download_url.substring(0, idx - 1);
-        idx = download_url.lastIndexOf('/');
-        download_url = download_url.substring(0, idx);
-        download_url += "/download/" + tag + "/firmware-" + tag + ".bin";
-        Serial.println(download_url);
-        download_firmware(download_url);
-      }
+      
+      download_firmware(download_url);
     }
 }
 
-/* 
- * Download binary image and use Update library to update the device.
- */
 bool download_firmware(String url)
 {
+  // Create a separate insecure client for CDN downloads
+  WiFiClientSecure downloadClient;
+  downloadClient.setInsecure(); // Skip cert validation for CDN
+  //downloadClient.setBufferSizes(1024, 1024);
+  
   HTTPClient http;
-  Serial.print("[HTTP] Download begin...\n");
+  Serial.printf("[HTTP] Download begin...\n");
+  Serial.println(url);
+  Serial.printf("URL length: %d chars\n", url.length());
+  
+  http.begin(downloadClient, url);
+  http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+  int httpCode = http.GET();
 
-  http.begin(client, url);
-  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+
+  //http.setReuse(false);
+  //http.setTimeout(60000);
+  
 
   Serial.print("[HTTP] GET...\n");
-  // start connection and send HTTP header
-  int httpCode = http.GET();
+  ESP.wdtFeed();
+  
+  
+  
   if (httpCode > 0)
   {
-    // HTTP header has been send and Server response header has been handled
     Serial.printf("[HTTP] GET... code: %d\n", httpCode);
 
-    // file found at server
     if (httpCode == HTTP_CODE_OK)
     {
-
-      int contentLength = http.getSize();
+      size_t contentLength = http.getSize();
       Serial.println("contentLength : " + String(contentLength));
 
       if (contentLength > 0)
       {
-        bool canBegin = Update.begin(contentLength);
-        if (canBegin)
+        // Initialize Update FIRST with U_FLASH parameter
+        bool canBegin = Update.begin(contentLength, U_FLASH);
+        if (!canBegin)
         {
-          // client = http.getStream();
-          Serial.println("Begin OTA. This may take 2 - 5 mins to complete. Things might be quite for a while.. Patience!");
-          size_t written = Update.writeStream(client);
+          Serial.println("Not enough space to begin OTA");
+          Serial.printf("Update error: %d\n", Update.getError());
+          client.flush();
+          return false;
+        }
+        
+        Serial.println("Begin OTA. This may take 2 - 5 mins to complete. Things might be quite for a while.. Patience!");
+        Serial.printf("Free sketch space: %u bytes\n", ESP.getFreeSketchSpace());
+        
+        // Get stream reference - don't copy it
+        Stream& stream = http.getStream();
+        size_t written = Update.writeStream(stream);                
+        
+        if (written == contentLength) {
+          Serial.println("Written : " + String(written) + " successfully");
+        } else {
+          Serial.println("Written only : " + String(written) + "/" + String(contentLength) + ". Retry?");
+          Serial.printf("Update error: %d\n", Update.getError());
+        }
 
-          if (written == static_cast<size_t>(contentLength))
+        if (Update.end())
+        {
+          Serial.println("OTA done!");
+          if (Update.isFinished())
           {
-            Serial.println("Written : " + String(written) + " successfully");
+            Serial.println("Update successfully completed. Rebooting.");
+            ESP.restart();
+            return true;
           }
           else
           {
-            Serial.println("Written only : " + String(written) + "/" + String(contentLength) + ". Retry?");
-          }
-
-          if (Update.end())
-          {
-            Serial.println("OTA done!");
-            if (Update.isFinished())
-            {
-              Serial.println("Update successfully completed. Rebooting.");
-              ESP.restart();
-              return true;
-            }
-            else
-            {
-              Serial.println("Update not finished? Something went wrong!");
-              return false;
-            }
-          }
-          else
-          {
-            Serial.println("Error Occurred. Error #: " + String(Update.getError()));
+            Serial.println("Update not finished? Something went wrong!");
             return false;
           }
         }
         else
         {
-          Serial.println("Not enough space to begin OTA");
-          client.flush();
+          Serial.println("Error Occurred. Error #: " + String(Update.getError()));
           return false;
         }
       }

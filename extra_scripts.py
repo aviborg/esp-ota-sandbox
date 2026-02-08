@@ -1,4 +1,4 @@
-Import("env")
+Import("env")   # type: ignore
 
 # List installed packages
 env.Execute("$PYTHONEXE -m pip list")

@@ -1,54 +1,94 @@
-name: release
+name: Build and Release Firmware
 
 on:
-  push:
-    tags:
-      - '*'
+  release:
+    types: [created]  # Trigger when a release is created through GitHub UI
+
+permissions:
+  contents: write  # Required for uploading release assets
 
 jobs:
-  build_release:
-    name: build_release
+  build-and-release:
+    name: Build ESP8266 Firmware
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v2
-      - name: Cache pip
-        uses: actions/cache@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - name: Cache PlatformIO
-        uses: actions/cache@v2
-        with:
-          path: ~/.platformio
-          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+          fetch-depth: 0  # Full history for better build info
+
       - name: Set up Python
-        uses: actions/setup-python@v2
-      - name: Install PlatformIO
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade platformio
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.2.3
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Run PlatformIO
-        run: |
-          echo $CLOUD_VERSION
-          echo $CLOUD_DOWNLOAD_URL
-          echo ${{ steps.get_release.outputs.upload_url }}
-          pio run -e esp12e
+          pip install platformio cryptography
+
+      - name: Build firmware
+        run: pio run -e esp12e
         env:
           CLOUD_VERSION: ${{ github.ref_name }}
           CLOUD_DOWNLOAD_URL: ${{ github.server_url }}/${{ github.repository }}/releases/latest
-      - name: Upload binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Get firmware info
+        id: firmware_info
+        run: |
+          FIRMWARE_SIZE=$(stat -c%s .pio/build/esp12e/firmware.bin)
+          FIRMWARE_SIZE_KB=$((FIRMWARE_SIZE / 1024))
+          echo "size=$FIRMWARE_SIZE" >> $GITHUB_OUTPUT
+          echo "size_kb=$FIRMWARE_SIZE_KB" >> $GITHUB_OUTPUT
+          echo "Firmware size: $FIRMWARE_SIZE_KB KB ($FIRMWARE_SIZE bytes)"
+
+      - name: Generate checksums
+        run: |
+          cd .pio/build/esp12e
+          sha256sum firmware.bin > firmware.bin.sha256
+          md5sum firmware.bin > firmware.bin.md5
+          cat firmware.bin.sha256
+          cat firmware.bin.md5
+
+      - name: Rename firmware with version
+        run: |
+          cp .pio/build/esp12e/firmware.bin firmware-${{ github.ref_name }}.bin
+          cp .pio/build/esp12e/firmware.bin.sha256 firmware-${{ github.ref_name }}.bin.sha256
+          cp .pio/build/esp12e/firmware.bin.md5 firmware-${{ github.ref_name }}.bin.md5
+
+      - name: Upload firmware assets to release
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ./.pio/build/esp12e/firmware.bin
-          asset_name: firmware-${{github.ref_name}}.bin
-          asset_content_type: application/binary
+          files: |
+            firmware-${{ github.ref_name }}.bin
+            firmware-${{ github.ref_name }}.bin.sha256
+            firmware-${{ github.ref_name }}.bin.md5
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Summary
+        run: |
+          echo "## ✅ Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Firmware Size**: ${{ steps.firmware_info.outputs.size_kb }} KB" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Board**: ESP8266 (ESP-12E)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release URL**: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- firmware-${{ github.ref_name }}.bin" >> $GITHUB_STEP_SUMMARY
+          echo "- firmware-${{ github.ref_name }}.bin.sha256" >> $GITHUB_STEP_SUMMARY
+          echo "- firmware-${{ github.ref_name }}.bin.md5" >> $GITHUB_STEP_SUMMARY

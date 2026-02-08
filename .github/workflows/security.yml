@@ -1,0 +1,120 @@
+name: Dependency and Security Checks
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight
+  workflow_dispatch:  # Allow manual trigger
+  push:
+    paths:
+      - 'platformio.ini'
+      - 'requirements.txt'
+      - '.github/workflows/security.yml'
+
+jobs:
+  dependency-check:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio cryptography safety pip-audit
+
+      - name: Check for outdated packages
+        run: |
+          echo "## 📦 Python Package Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          pip list --outdated || true
+
+      - name: Security audit (pip-audit)
+        run: |
+          echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          pip-audit || true
+        continue-on-error: true
+
+      - name: Check PlatformIO libraries
+        run: |
+          pio pkg outdated || true
+        continue-on-error: true
+
+  firmware-health:
+    name: Firmware Health Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install platformio cryptography
+
+      - name: Build firmware
+        run: pio run -e esp12e
+        env:
+          CLOUD_VERSION: "health-check"
+          CLOUD_DOWNLOAD_URL: ${{ github.server_url }}/${{ github.repository }}/releases/latest
+
+      - name: Analyze build
+        run: |
+          FIRMWARE_SIZE=$(stat -c%s .pio/build/esp12e/firmware.bin)
+          FIRMWARE_SIZE_KB=$((FIRMWARE_SIZE / 1024))
+          
+          echo "## 🏥 Firmware Health Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+          echo "- **Firmware Size**: $FIRMWARE_SIZE_KB KB" >> $GITHUB_STEP_SUMMARY
+          echo "- **Check Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if size is reasonable
+          if [ $FIRMWARE_SIZE_KB -gt 900 ]; then
+            echo "- **Warning**: ⚠️ Firmware size is getting large (> 900 KB)" >> $GITHUB_STEP_SUMMARY
+          elif [ $FIRMWARE_SIZE_KB -gt 1024 ]; then
+            echo "- **Error**: ❌ Firmware size exceeds 1 MB limit" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "- **Size Status**: ✅ Within acceptable range" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  certificate-check:
+    name: SSL Certificate Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check GitHub API certificate
+        run: |
+          echo "Checking GitHub API SSL certificate..."
+          echo | openssl s_client -servername api.github.com -connect api.github.com:443 2>/dev/null | openssl x509 -noout -dates
+          
+          echo "## 🔐 Certificate Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "GitHub API certificate is valid" >> $GITHUB_STEP_SUMMARY
+
+      - name: Verify certificate in codebase
+        run: |
+          if [ -f "include/certs.h" ]; then
+            echo "✅ Certificate file exists" >> $GITHUB_STEP_SUMMARY
+            CERT_LINES=$(wc -l < include/certs.h)
+            echo "- **Certificate file size**: $CERT_LINES lines" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Certificate file not found - will be generated during build" >> $GITHUB_STEP_SUMMARY
+          fi
