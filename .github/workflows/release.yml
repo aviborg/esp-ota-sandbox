@@ -68,7 +68,7 @@ jobs:
           cp .pio/build/esp12e/firmware.bin.md5 firmware-${{ github.ref_name }}.bin.md5
 
       - name: Upload firmware assets to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           files: |
             firmware-${{ github.ref_name }}.bin
