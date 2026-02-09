@@ -105,7 +105,7 @@ jobs:
     
     steps:
       - name: Download firmware artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: firmware-esp12e-${{ github.sha }}
           path: ./firmware
