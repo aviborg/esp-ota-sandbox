@@ -76,7 +76,7 @@ jobs:
           echo "- Free Space: $FREE_SPACE"
 
       - name: Upload firmware artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: firmware-${{ matrix.environment }}-${{ github.sha }}
           path: |
