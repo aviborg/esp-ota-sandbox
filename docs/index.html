@@ -18,6 +18,7 @@
                 <a href="#features">Features</a>
                 <a href="#quickstart">Quick Start</a>
                 <a href="#how-it-works">How It Works</a>
+                <a href="#api-usage">API</a>
                 <a href="#ci-cd">CI/CD</a>
                 <a href="#troubleshooting">Troubleshooting</a>
                 <a href="https://github.com/aviborg/esp-ota-sandbox" target="_blank" class="github-link">GitHub</a>
@@ -141,8 +142,10 @@ export CLOUD_DOWNLOAD_URL="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/l
                     <h3>📱 Initialization</h3>
                     <ul>
                         <li>Device connects to WiFi using WiFiManager</li>
+                        <li><code>FirmwareUpdater</code> class is instantiated</li>
+                        <li><code>begin()</code> method initializes SSL certificates with smart pointers</li>
                         <li>Syncs time via NTP (required for SSL)</li>
-                        <li>Loads GitHub SSL certificates</li>
+                        <li>Sets trust anchors for GitHub SSL certificates</li>
                     </ul>
                 </div>
 
@@ -173,6 +176,29 @@ export CLOUD_DOWNLOAD_URL="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/l
             <div class="technical-details">
                 <h3>Key Technical Details</h3>
                 
+                <div class="detail-card">
+                    <h4>Class-Based Architecture</h4>
+                    <p>Modern C++ implementation with RAII and smart pointers:</p>
+                    <pre><code>FirmwareUpdater updater;  // Create instance
+
+void setup() {
+  wifi_connect();
+  updater.begin();  // Initialize SSL and sync time
+}
+
+void loop() {
+  updater.checkFirmware();  // Check for updates
+}</code></pre>
+                </div>
+
+                <div class="detail-card">
+                    <h4>Smart Pointer Management</h4>
+                    <p>Certificates and SSL clients managed with <code>std::unique_ptr</code> for automatic memory management:</p>
+                    <pre><code>std::unique_ptr&lt;BearSSL::X509List&gt; cert_;
+std::unique_ptr&lt;BearSSL::WiFiClientSecure&gt; client_;</code></pre>
+                    <p>No global variables - all state encapsulated in the class.</p>
+                </div>
+
                 <div class="detail-card">
                     <h4>Stream Handling</h4>
                     <p>The critical fix for OTA success is using a stream reference:</p>
@@ -347,9 +373,9 @@ Update successfully completed. Rebooting.</code></pre>
 │   ├── certs.h           # Generated SSL certificates
 │   └── README
 ├── lib/
-│   ├── update_firmware/  # OTA update logic
-│   │   ├── update_firmware.cpp
-│   │   └── update_firmware.h
+│   ├── update_firmware/  # OTA update logic (C++ class)
+│   │   ├── update_firmware.cpp  # FirmwareUpdater implementation
+│   │   └── update_firmware.h    # FirmwareUpdater class definition
 │   └── wifi_connect/     # WiFi management
 │       ├── wifi_connect.cpp
 │       └── wifi_connect.h
@@ -360,6 +386,53 @@ Update successfully completed. Rebooting.</code></pre>
 │   └── main.cpp         # Main application
 ├── extra_scripts.py     # PlatformIO build hooks
 └── platformio.ini       # PlatformIO configuration</code></pre>
+        </section>
+
+        <section class="api-usage">
+            <h2>💻 API Usage</h2>
+            <h3>FirmwareUpdater Class</h3>
+            <p>The firmware updater provides a clean, object-oriented interface for OTA updates:</p>
+            
+            <div class="api-example">
+                <h4>Basic Usage</h4>
+                <pre><code>#include "update_firmware.h"
+
+FirmwareUpdater updater;  // Create instance
+
+void setup() {
+  Serial.begin(115200);
+  wifi_connect();         // Connect to WiFi first
+  updater.begin();        // Initialize (syncs time, loads certs)
+}
+
+void loop() {
+  // Check for updates every 24 hours
+  static unsigned long last_check = 0;
+  if (millis() - last_check > 24UL * 3600 * 1000) {
+    last_check = millis();
+    updater.checkFirmware();
+  }
+}</code></pre>
+            </div>
+
+            <div class="api-methods">
+                <h4>Public Methods</h4>
+                <ul>
+                    <li><code>void begin()</code> - Initialize SSL certificates, sync time, set trust anchors</li>
+                    <li><code>void checkFirmware()</code> - Check GitHub releases for new version and update if available</li>
+                    <li><code>bool downloadFirmware(const String& url)</code> - Download and install firmware from URL</li>
+                </ul>
+            </div>
+
+            <div class="api-features">
+                <h4>Implementation Details</h4>
+                <ul>
+                    <li>Uses <code>std::unique_ptr</code> for automatic memory management</li>
+                    <li>No global variables - all state encapsulated in class</li>
+                    <li>Follows modern C++ best practices with RAII</li>
+                    <li>Based on ESP8266 Arduino BearSSL examples</li>
+                </ul>
+            </div>
         </section>
 
         <section class="contributing">

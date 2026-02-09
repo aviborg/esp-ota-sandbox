@@ -1,9 +1,10 @@
 #include <Arduino.h>
-
 #include <ESP8266HTTPClient.h>
 
 #include "wifi_connect.h"
 #include "update_firmware.h"
+
+FirmwareUpdater updater;
 
 void setup() {
   Serial.begin(115200);
@@ -11,7 +12,7 @@ void setup() {
   Serial.printf("Current version: %s\n", CLOUD_VERSION);
   Serial.printf("Download url: %s\n", CLOUD_DOWNLOAD_URL);
   wifi_connect();
-  sync_time();
+  updater.begin();
 }
 
 void loop() {
@@ -25,7 +26,7 @@ void loop() {
 
   if(millis() - previous_check > update_interval){
     previous_check = millis();
-    check_firmware();
+    updater.checkFirmware();
   }
 
   yield();

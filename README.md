@@ -70,9 +70,9 @@ esp-ota-sandbox/
 │   ├── certs.h           # Generated SSL certificates
 │   └── README
 ├── lib/
-│   ├── update_firmware/  # OTA update logic
-│   │   ├── update_firmware.cpp
-│   │   └── update_firmware.h
+│   ├── update_firmware/  # OTA update logic (C++ class)
+│   │   ├── update_firmware.cpp  # FirmwareUpdater implementation
+│   │   └── update_firmware.h    # FirmwareUpdater class definition
 │   └── wifi_connect/     # WiFi management
 │       ├── wifi_connect.cpp
 │       └── wifi_connect.h
@@ -85,14 +85,60 @@ esp-ota-sandbox/
 └── platformio.ini       # PlatformIO configuration
 ```
 
+## API Usage
+
+### FirmwareUpdater Class
+
+The `FirmwareUpdater` class provides a clean, object-oriented interface for OTA updates:
+
+```cpp
+#include "update_firmware.h"
+
+FirmwareUpdater updater;  // Create instance
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Connect to WiFi first
+  wifi_connect();
+  
+  // Initialize updater (syncs time, loads certificates)
+  updater.begin();
+}
+
+void loop() {
+  // Check for updates every 24 hours
+  static unsigned long last_check = 0;
+  if (millis() - last_check > 24UL * 3600 * 1000) {
+    last_check = millis();
+    updater.checkFirmware();
+  }
+}
+```
+
+#### Public Methods
+
+- `void begin()` - Initialize SSL certificates, sync time, set trust anchors
+- `void checkFirmware()` - Check GitHub releases for new version and update if available
+- `bool downloadFirmware(const String& url)` - Download and install firmware from URL
+
+#### Implementation Details
+
+- Uses `std::unique_ptr` for automatic memory management
+- No global variables - all state encapsulated in class
+- Follows modern C++ best practices with RAII
+- Based on ESP8266 Arduino examples using BearSSL smart pointers
+
 ## How It Works
 
 ### Update Check Flow
 
 1. **Initialization**
    - Device connects to WiFi using WiFiManager
+   - `FirmwareUpdater` class is instantiated
+   - `begin()` method initializes SSL certificates using smart pointers
    - Syncs time via NTP (required for SSL certificate validation)
-   - Loads GitHub SSL certificates
+   - Sets trust anchors for GitHub SSL certificates
 
 2. **Version Check**
    - Every 24 hours, queries GitHub Releases API (via `CLOUD_DOWNLOAD_URL`)
@@ -107,6 +153,30 @@ esp-ota-sandbox/
    - Reboots device with new firmware
 
 ### Key Technical Details
+
+**Class-Based Architecture**: The firmware updater uses modern C++ with RAII and smart pointers:
+```cpp
+FirmwareUpdater updater;  // Create instance
+
+void setup() {
+  // Initialize WiFi first
+  wifi_connect();
+  
+  // Initialize updater with SSL certificates and time sync
+  updater.begin();
+}
+
+void loop() {
+  // Check for updates periodically
+  updater.checkFirmware();
+}
+```
+
+**Smart Pointer Management**: Certificates and SSL clients are managed with `std::unique_ptr`:
+```cpp
+std::unique_ptr<BearSSL::X509List> cert_;
+std::unique_ptr<BearSSL::WiFiClientSecure> client_;
+```
 
 **Stream Handling**: The critical fix for OTA success is using a stream reference:
 ```cpp

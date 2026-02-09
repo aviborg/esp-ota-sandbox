@@ -43,12 +43,23 @@ The documentation includes:
 - ✅ Clear navigation with anchor links
 - ✅ Comprehensive feature descriptions
 - ✅ Step-by-step quick start guide
-- ✅ Detailed "How It Works" section
+- ✅ Detailed "How It Works" section with class-based architecture
+- ✅ API usage examples with `FirmwareUpdater` class
+- ✅ Smart pointer implementation details
 - ✅ CI/CD workflow documentation
 - ✅ Troubleshooting guide
 - ✅ Code examples with syntax highlighting
 - ✅ Mobile-friendly layout
 - ✅ Print-friendly styles
+
+## Recent Updates
+
+### Class-Based API (Latest)
+- Updated to reflect the new `FirmwareUpdater` class implementation
+- Added comprehensive API usage section with code examples
+- Documented smart pointer usage and modern C++ patterns
+- Updated workflow descriptions to show class initialization
+- Added navigation link to API documentation
 
 ## Customization
 

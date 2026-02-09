@@ -507,6 +507,95 @@ p code, li code {
     font-size: 0.9rem;
 }
 
+/* API Usage */
+.api-usage {
+    padding: 3rem 0;
+}
+
+.api-usage h3 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+.api-usage h4 {
+    font-size: 1.4rem;
+    margin: 1.5rem 0 1rem;
+    color: var(--primary-color);
+}
+
+.api-example {
+    background: var(--light-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    border-left: 4px solid var(--primary-color);
+}
+
+.api-example pre {
+    background: var(--dark-bg);
+    color: #e1e4e8;
+    padding: 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+.api-methods,
+.api-features {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    box-shadow: var(--shadow);
+}
+
+.api-methods ul,
+.api-features ul {
+    list-style: none;
+    margin-top: 1rem;
+}
+
+.api-methods ul li,
+.api-features ul li {
+    padding: 0.75rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.api-methods ul li:last-child,
+.api-features ul li:last-child {
+    border-bottom: none;
+}
+
+.api-methods ul li:before {
+    content: "•";
+    color: var(--secondary-color);
+    font-weight: bold;
+    font-size: 1.2rem;
+    position: absolute;
+    left: 0;
+}
+
+.api-features ul li:before {
+    content: "✓";
+    color: var(--secondary-color);
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+}
+
+.api-methods code,
+.api-features code {
+    background: var(--code-bg);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: #e83e8c;
+}
+
 /* Contributing */
 .contributing ul {
     list-style: none;
